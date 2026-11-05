@@ -28,23 +28,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
 
       - name: Install Dependencies
         run: npm install
 
       - name: Build macOS Application (.dmg & .zip)
         if: matrix.os == 'macos-latest'
-        run: npx electron-builder --mac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac --publish never
 
       - name: Build Linux Application (.AppImage & .deb)
         if: matrix.os == 'ubuntu-latest'
-        run: npx electron-builder --linux AppImage deb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux AppImage deb --publish never
 
       - name: Build Windows Application (.exe portable)
         if: matrix.os == 'windows-latest'
-        run: npx electron-builder --win portable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win portable --publish never
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
