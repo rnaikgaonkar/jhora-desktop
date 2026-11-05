@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Jagannatha Hora</title>
+  <script src="libv86.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      background: #090d16;
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .top-toolbar {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: #f59e0b;
+      letter-spacing: 0.5px;
+    }
+    .badge {
+      font-size: 11px;
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      border: 1px solid #334155;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    button:hover {
+      background: #334155;
+      color: #ffffff;
+      border-color: #475569;
+    }
+    button.primary {
+      background: #d97706;
+      color: #ffffff;
+      border-color: #f59e0b;
+    }
+    button.primary:hover {
+      background: #b45309;
+    }
+    #screen_wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #030712;
+      overflow: auto;
+      padding: 12px;
+    }
+    #screen_container {
+      border: 2px solid #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.9);
+      background-color: #000;
+    }
+    #screen_container canvas {
+      display: block;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: pixelated;
+    }
+    .status-bar {
+      background: #0b0f19;
+      border-top: 1px solid #1f2937;
+      padding: 6px 16px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    #status-text {
+      color: #38bdf8;
+      font-weight: 500;
+    }
+    .shortcut-hints {
+      color: #64748b;
+      font-size: 11px;
+    }
+    .shortcut-hints kbd {
+      background: #1e293b;
+      padding: 2px 5px;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div class="top-toolbar">
+    <div class="brand">
+      <span class="brand-title">☸ Jagannatha Hora</span>
+      <span class="badge">Universal Desktop (v86 JIT)</span>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="lockMouse()">🖱️ Capture Mouse</button>
+      <button onclick="openChartFromDisk()">📂 Open Chart</button>
+      <button onclick="saveSnapshot()">💾 Save Snapshot</button>
+      <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <div id="screen_wrapper">
+    <div id="screen_container">
+      <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+      <canvas style="display: none"></canvas>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div id="status-text">Booting Jagannatha Hora engine...</div>
+    <div class="shortcut-hints">
+      Press <kbd>ESC</kbd> to release mouse • <kbd>F2</kbd> Birth Data • <kbd>F3</kbd> Muhurta • <kbd>F4</kbd> Transit
+    </div>
+  </div>
+
+  <script>
+    var V86Class = window.V86 || window.V86Starter;
+    var emulator = new V86Class({
+      wasm_path: "v86.wasm",
+      wasm_fallback_path: "v86-fallback.wasm",
+      memory_size: 512 * 1024 * 1024,
+      vga_memory_size: 8 * 1024 * 1024,
+      screen_container: document.getElementById("screen_container"),
+      bios: { url: "bios/seabios.bin" },
+      vga_bios: { url: "bios/vgabios.bin" },
+      hda: {
+        url: "chunks/windows2k-v2/.img",
+        size: 2147483648,
+        fixed_chunk_size: 262144,
+        use_parts: true,
+        async: true
+      },
+      initial_state: {
+        url: "windows2k_state-v4.bin.zst"
+      },
+      autostart: true
+    });
+
+    var statusEl = document.getElementById("status-text");
+
+    emulator.add_listener("emulator-ready", async function() {
+      statusEl.innerText = "Restoring desktop state...";
+      try {
+        const res = await fetch("jhora.iso");
+        const buf = await res.arrayBuffer();
+        await emulator.set_cdrom(buf);
+        statusEl.innerText = "Ready! JHora is on Drive D: (CD-ROM).";
+      } catch (e) {
+        console.error("Mount error:", e);
+      }
+    });
+
+    emulator.add_listener("screen-set-mode", function(is_graphical) {
+      if (is_graphical) {
+        statusEl.innerText = "Active. Click inside window or press 'Capture Mouse'.";
+      }
+    });
+
+    function lockMouse() {
+      emulator.lock_mouse();
+    }
+
+    function toggleFullscreen() {
+      if (window.jhoraDesktop) {
+        window.jhoraDesktop.toggleFullscreen();
+      }
+    }
+
+    async function openChartFromDisk() {
+      if (!window.jhoraDesktop) return;
+      const file = await window.jhoraDesktop.openChartDialog();
+      if (file) {
+        statusEl.innerText = "Loaded chart: " + file.name;
+        // In v86, file can be injected into the virtual filesystem
+        alert("Chart selected: " + file.name);
+      }
+    }
+
+    function saveSnapshot() {
+      statusEl.innerText = "Saving VM snapshot to disk...";
+      emulator.save_state(function(err, state) {
+        if (err) {
+          alert("Snapshot error: " + err);
+          return;
+        }
+        var blob = new Blob([state], { type: "application/octet-stream" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "jhora_desktop_state.bin";
+        a.click();
+        statusEl.innerText = "Snapshot saved locally!";
+      });
+    }
+
+    // Handle menu actions from Electron
+    if (window.jhoraDesktop) {
+      window.jhoraDesktop.onMenuAction(function(action) {
+        if (action === 'lock-mouse') lockMouse();
+        if (action === 'save-snapshot') saveSnapshot();
+        if (action === 'open-chart') openChartFromDisk();
+        if (action === 'reset-vm') emulator.restart();
+      });
+    }
+  </script>
+</body>
+</html>
+

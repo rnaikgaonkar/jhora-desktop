@@ -1,0 +1,42 @@
+{
+  "name": "jagannatha-hora",
+  "version": "1.0.0",
+  "description": "Jagannatha Hora (JHora) Vedic Astrology Software for macOS and Linux",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux AppImage deb",
+    "build:all": "electron-builder -ml"
+  },
+  "author": "P.V.R. Narasimha Rao (Ported with v86 Wasm Engine)",
+  "license": "Freeware",
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "org.vedicastrologer.jhora",
+    "productName": "Jagannatha Hora",
+    "directories": {
+      "output": "dist-package"
+    },
+    "files": [
+      "src/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.lifestyle",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  }
+}
